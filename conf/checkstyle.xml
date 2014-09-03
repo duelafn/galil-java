@@ -49,6 +49,13 @@ page at http://checkstyle.sourceforge.net/config.html
     <property name="severity" value="warning"/>
   </module>
 
+  <module name="RegexpSingleline">
+    <!-- == is wrong for string equality, do the best we can to find it -->
+    <property name="format" value='(("\s*==)|(==\s*"))' />
+    <property name="message" value='Can not use == to test string equality! Use String.equals(String)' />
+    <property name="severity" value="error"/>
+  </module>
+
   <!-- All Java AST specific tests live under TreeWalker module. -->
   <module name="TreeWalker">
 
