@@ -13,11 +13,6 @@ import java.util.Date;
 import java.util.List;
 
 
-interface MessageListener {
-    public void onMessage(String message);
-}
-
-
 public class Galil {
     private static final String VERSION = "1.0.0 Sep 2014 Galil.java";
     private static final byte   UNSOLICITED_BIT = (byte) 0x80;
@@ -25,8 +20,6 @@ public class Galil {
     private static final String TERMINATOR = "\015";
 
     protected int timeout_ms = 500;
-
-    protected List<MessageListener> listeners = new ArrayList<MessageListener>();
 
     protected String address;
     protected Socket socket;
@@ -181,15 +174,6 @@ public class Galil {
         } catch (UnsupportedEncodingException err) {
             throw new GalilException(err.toString(), 5006);// XXX: TODO: Correct code and message, but do not expect to happen, all bytes valid!
         }
-
-        if (unsol_msg.length() > 0 && listeners.size() > 0) {
-            String msg = unsol_msg.toString();
-            unsol_msg.delete(0, unsol_msg.length());
-
-            for (MessageListener ml : listeners) {
-                ml.onMessage(msg);
-            }
-        }
     }
 
     // Extract result up to the `count`th occurrence of `ack`.
@@ -262,17 +246,8 @@ public class Galil {
         return Double.parseDouble(command(cmd, TERMINATOR, ':', true));
     }
 
-    public void addMessageListener(MessageListener listener) {
-        listeners.add(listener);
-    }
-
     public String message() { return message(2); }
     public String message(int timeout) {
-        // Never messages when we have listeners, just return empty string.
-        if (listeners.size() > 0) {
-            return "";
-        }
-
         Socket sock = (unsolicited == null) ? socket : unsolicited;
 
         if (timeout <= 0) { timeout = 1; }
