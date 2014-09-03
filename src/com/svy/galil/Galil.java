@@ -268,7 +268,7 @@ public class Galil {
 
         StringBuilder cmd = new StringBuilder("DL");
         cmd.append(TERMINATOR);
-        cmd.append(program.replace("\n", TERMINATOR));
+        cmd.append(program.replaceAll("[\r\n]+", TERMINATOR));
         if (!TERMINATOR.equals(cmd.substring(cmd.length()-1))) {
             cmd.append(TERMINATOR);
         }
