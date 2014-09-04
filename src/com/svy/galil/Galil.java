@@ -21,9 +21,9 @@ public class Galil {
 
     protected int timeout_ms = 500;
 
-    protected String address;
-    protected Socket socket;
-    protected Socket unsolicited;
+    protected String address = null;
+    protected Socket socket = null;
+    protected Socket unsolicited = null;
 
     protected String _connection = new String();
     protected StringBuilder sol_msg = new StringBuilder(80);
@@ -85,11 +85,21 @@ public class Galil {
         }
     }
 
+    public void close() {
+        if (socket      != null) {
+            try { socket.close(); }
+            catch (IOException err) { }
+        }
+        if (unsolicited != null) {
+            try { unsolicited.close(); }
+            catch (IOException err) { }
+        }
+    }
+
 //     vector<string> addresses()
 
-    public String connection() {
-        return _connection;
-    }
+    public String connection() { return _connection; }
+    public String address()    { return address; }
 
     public void setTimeout(int timeout) throws GalilException {
         timeout_ms = timeout;

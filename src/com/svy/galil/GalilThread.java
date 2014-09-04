@@ -5,14 +5,22 @@ import java.util.LinkedList;
 
 public class GalilThread extends Thread {
 
+    private boolean just_keep_swimming = true;
     private String address;
-    private Galil connection;
+    private Galil connection = null;
     private final LinkedList<IdentifiedString> iqueue = new LinkedList<IdentifiedString>();
     private final HashMap<Integer, ReturnValue> oqueue = new HashMap<Integer, ReturnValue>();
     private Integer ident = 0;
 
     public GalilThread(String addr) throws GalilException {
         address = addr;
+    }
+
+    public String connection() { return (connection == null) ? null : connection.connection(); }
+    public String address()    { return address; }
+
+    public void close() {
+        just_keep_swimming = false;
     }
 
     private Integer next_id() {
@@ -111,7 +119,7 @@ public class GalilThread extends Thread {
             throw new RuntimeException("Unable to connect to controller", err);
         }
 
-        while (true) {
+        while (just_keep_swimming) {
             try {
                 IdentifiedString cmd;
                 ReturnValue rv = null;
@@ -151,6 +159,8 @@ public class GalilThread extends Thread {
                 break;
             }
         }
+
+        connection.close();
     }
 
     private ReturnValue th_process_command(IdentifiedString cmd) throws GalilException {
