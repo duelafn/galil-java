@@ -101,6 +101,29 @@ public class GalilThread extends Thread {
         else       { throw rv.error; }
     }
 
+    public double[] wait_list(Integer id) throws GalilException {
+        return wait_list(id, -1);
+    }
+    public double[] wait_list(Integer id, int n) throws GalilException {
+        return wait_list(id, n, "( *, *| +)");
+    }
+    public double[] wait_list(Integer id, int n, String regex) throws GalilException {
+        ReturnValue rv = wait_rv(id);
+        if (!rv.ok) { throw rv.error; }
+
+        String[] vals = rv.value.split(regex);
+        if (n > 0 && vals.length != n) { throw new GalilException("Not enough values", 9999); }// XXX: TODO: Correct code and message
+
+        double[] list = new double[vals.length];
+        for (int i = 0; i < vals.length; i++) {
+            try {
+                list[i] = Double.parseDouble(vals[i]);
+            } catch (NumberFormatException err) {
+                throw new GalilException(String.format("Parse error at index %d: %s", i, err.getMessage()), 9999);// XXX: TODO: Correct code and message
+            }
+        }
+        return list;
+    }
 
     public String command(String cmd) throws GalilException {
         return wait_string( enqueue( cmd ) );
@@ -112,6 +135,16 @@ public class GalilThread extends Thread {
 
     public double commandValue(String cmd) throws GalilException {
         return wait_double( enqueue( cmd ) );
+    }
+
+    public double[] commandListValue(String cmd) throws GalilException {
+        return wait_list( enqueue( cmd ) );
+    }
+    public double[] commandListValue(String cmd, int n) throws GalilException {
+        return wait_list( enqueue( cmd ), n);
+    }
+    public double[] commandListValue(String cmd, int n, String regex) throws GalilException {
+        return wait_list( enqueue( cmd ), n, regex);
     }
 
     public void connect_unsolicited() throws GalilException {
