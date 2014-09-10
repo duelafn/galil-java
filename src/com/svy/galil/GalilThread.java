@@ -51,6 +51,18 @@ public class GalilThread extends Thread {
         return cmd.id;
     }
 
+    public String galil_hex_to_string(String hex) {
+        StringBuilder rv = new StringBuilder();
+        String clean = hex.replaceAll("[^0-9a-fA-F]", "").replaceAll("(00)+$", "");
+
+        for (int i = 0; i < clean.length(); i+=2) {
+            String str = clean.substring(i, i+2);
+            rv.append((char) Integer.parseInt(str, 16));
+        }
+
+        return rv.toString();
+    }
+
     public Integer enqueue(String cmd) {
         return enqueue(new IdentifiedString(next_id(), false, cmd));
     }
@@ -92,6 +104,10 @@ public class GalilThread extends Thread {
 
     public String command(String cmd) throws GalilException {
         return wait_string( enqueue( cmd ) );
+    }
+
+    public String commandString(String cmd) throws GalilException {
+        return galil_hex_to_string( wait_string( enqueue( cmd ) ) );
     }
 
     public double commandValue(String cmd) throws GalilException {
