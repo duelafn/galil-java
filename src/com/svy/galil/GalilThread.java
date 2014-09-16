@@ -74,20 +74,22 @@ public class GalilThread extends Thread {
         }
     }
 
-    public ReturnValue wait_rv(Integer id) {
-        while (true) {
+    public ReturnValue wait_rv(Integer id) throws GalilException {
+        long timeout = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < timeout) {
             synchronized (oqueue) {
                 if (oqueue.containsKey(id)) {
                     return oqueue.remove(id);
                 }
 
                 try {
-                    oqueue.wait();
+                    oqueue.wait(100);
                 } catch (InterruptedException err) {
-                    return null;
+                    throw new GalilException("wait_rv InterruptedException: " + err.getMessage(), 9999);// XXX: TODO: Correct code and message
                 }
             }
         }
+        throw new GalilException("wait_rv timeout", 1000);// XXX: TODO: Correct code and message
     }
 
     public String wait_string(Integer id) throws GalilException {
