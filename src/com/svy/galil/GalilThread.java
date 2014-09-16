@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class GalilThread extends Thread {
+    public  boolean die_on_connection_error = false;
 
     private boolean just_keep_swimming = true;
     private String address;
@@ -165,7 +166,11 @@ public class GalilThread extends Thread {
         try {
             connection = new Galil(address);
         } catch (GalilException err) {
-            throw new RuntimeException("Unable to connect to controller", err);
+            if (die_on_connection_error) {
+                throw new RuntimeException("Unable to connect to controller", err);
+            } else {
+                return;
+            }
         }
 
         while (just_keep_swimming) {
