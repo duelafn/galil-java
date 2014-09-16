@@ -2,6 +2,7 @@ package com.svy.galil;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 public class GalilThread extends Thread {
     public  boolean die_on_connection_error = false;
@@ -104,6 +105,12 @@ public class GalilThread extends Thread {
         else       { throw rv.error; }
     }
 
+    public List<Double> wait_listD(Integer id) throws GalilException {
+        ReturnValue rv = wait_rv(id);
+        if (rv.ok) { return rv.listD; }
+        else       { throw rv.error; }
+    }
+
     public double[] wait_list(Integer id) throws GalilException {
         return wait_list(id, -1);
     }
@@ -159,8 +166,15 @@ public class GalilThread extends Thread {
     }
 
     public Integer programDownload(String program) {
-        String args[] = { program };
-        return enqueue(new IdentifiedString(next_id(), true, "programDownload", args));
+        return enqueue(new IdentifiedString(next_id(), true, "programDownload", program));
+    }
+
+    public Integer arrayDownload(List<Double> array, String name) {
+        return enqueue(new IdentifiedString(next_id(), true, "arrayDownload", name, array));
+    }
+
+    public List<Double> arrayUpload(String name) throws GalilException {
+        return wait_listD( enqueue(new IdentifiedString(next_id(), true, "arrayUpload", name)) );
     }
 
     @Override
@@ -196,12 +210,16 @@ public class GalilThread extends Thread {
                             rv = th_message(cmd);
                         } else if (cmd.value.equals("programDownload")) {
                             rv = th_programDownload(cmd);
+                        } else if (cmd.value.equals("arrayDownload")) {
+                            rv = th_arrayDownload(cmd);
+                        } else if (cmd.value.equals("arrayUpload")) {
+                            rv = th_arrayUpload(cmd);
                         }
                     } else {
                         rv = th_process_command(cmd);
                     }
                 } catch (GalilException err) {
-                    rv = new ReturnValue(false, err, null);
+                    rv = new ReturnValue(false, err, (String) null);
                 }
 
                 if (rv != null) {
@@ -233,26 +251,45 @@ public class GalilThread extends Thread {
     }
 
     private ReturnValue th_programDownload(IdentifiedString cmd) throws GalilException {
-        connection.programDownload(cmd.args[0]);
+        connection.programDownload(cmd.str);
         return null;
+    }
+
+    private ReturnValue th_arrayDownload(IdentifiedString cmd) throws GalilException {
+        connection.arrayDownload(cmd.listD, cmd.str);
+        return null;
+    }
+
+    private ReturnValue th_arrayUpload(IdentifiedString cmd) throws GalilException {
+        return new ReturnValue(true, null, connection.arrayUpload(cmd.str));
     }
 
     public class IdentifiedString {
         public final Integer id;
         public final boolean meta;
         public final String value;
-        public final String[] args;
+        public final String str;
+        public final List<Double> listD;
         public IdentifiedString(Integer id, boolean meta, String value) {
             this.id = id;
             this.meta = meta;
             this.value = value;
-            this.args = null;
+            this.str = null;
+            this.listD = null;
         }
-        public IdentifiedString(Integer id, boolean meta, String value, String[] args) {
+        public IdentifiedString(Integer id, boolean meta, String value, String str) {
             this.id = id;
             this.meta = meta;
             this.value = value;
-            this.args = args;
+            this.str = str;
+            this.listD = null;
+        }
+        public IdentifiedString(Integer id, boolean meta, String value, String str, List<Double> listD) {
+            this.id = id;
+            this.meta = meta;
+            this.value = value;
+            this.str = str;
+            this.listD = listD;
         }
     }
 
@@ -260,10 +297,18 @@ public class GalilThread extends Thread {
         public final boolean ok;
         public final GalilException error;
         public final String value;
+        public final List<Double> listD;
         public ReturnValue(boolean ok, GalilException error, String value) {
             this.ok = ok;
             this.error = error;
             this.value = value;
+            this.listD = null;
+        }
+        public ReturnValue(boolean ok, GalilException error, List<Double> listD) {
+            this.ok = ok;
+            this.error = error;
+            this.value = null;
+            this.listD = listD;
         }
     }
 
