@@ -229,6 +229,7 @@ public class Galil {
         // Clear out any unused solicited messages so that we can provide
         // eventual consistency even in the presence of crazy output
         // oddities (e.g., command("x=2;WT5000;y=5"))
+        try { read_to_buffers(2); } catch (GalilException err) { }
         sol_msg.setLength(0);
 
         try {
