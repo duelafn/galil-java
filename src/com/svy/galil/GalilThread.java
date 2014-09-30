@@ -1,11 +1,16 @@
 package com.svy.galil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
+
 
 public class GalilThread extends Thread {
     public  boolean die_on_connection_error = false;
+
+    private StringBuilder msg_builder = new StringBuilder(1024);
 
     private boolean just_keep_swimming = true;
     private String address;
@@ -18,7 +23,11 @@ public class GalilThread extends Thread {
         address = addr;
     }
 
-    public String connection() { return (connection == null) ? null : connection.connection(); }
+    public String connection() {
+        synchronized (connection) {
+            return (connection == null) ? null : connection.connection();
+        }
+    }
     public String address()    { return address; }
 
     public void close() {
@@ -53,7 +62,19 @@ public class GalilThread extends Thread {
         return cmd.id;
     }
 
-    public String galil_hex_to_string(String hex) {
+    public Integer enqueue(String cmd) {
+        return enqueue(new IdentifiedString(next_id(), false, cmd));
+    }
+
+    public List<Integer> enqueue(List<String> cmds) {
+        List<Integer> ids = new ArrayList<Integer>();
+        for (String cmd : cmds) {
+            ids.add(enqueue(new IdentifiedString(next_id(), false, cmd)));
+        }
+        return ids;
+    }
+
+    public static String galil_hex_to_string(String hex) {
         StringBuilder rv = new StringBuilder();
         String clean = hex.replaceAll("[^0-9a-fA-F]", "").replaceAll("(00)+$", "");
 
@@ -65,27 +86,38 @@ public class GalilThread extends Thread {
         return rv.toString();
     }
 
-    public Integer enqueue(String cmd) {
-        return enqueue(new IdentifiedString(next_id(), false, cmd));
-    }
-
     public ReturnValue peek_rv(Integer id) {
         synchronized (oqueue) {
             return oqueue.get(id);
         }
     }
 
-    public ReturnValue wait_rv(Integer id) throws GalilException {
-        long timeout = System.currentTimeMillis() + 5000;
+    public void rv_ok(Integer id) throws GalilException {
+        ReturnValue rv = wait_rv(id);
+        if (!rv.ok) { throw rv.error; }
+    }
+    public void rv_ok(List<Integer> ids) throws GalilException {
+        for (Integer id : ids) { wait_rv(id); }
+    }
+
+    public ReturnValue wait_rv(Integer id) throws GalilException { return wait_rv(id, 5000); }
+    public ReturnValue wait_rv(Integer id, int tout_ms) throws GalilException {
+        long timeout = System.currentTimeMillis() + tout_ms;
         while (System.currentTimeMillis() < timeout) {
             synchronized (oqueue) {
                 if (oqueue.containsKey(id)) {
                     return oqueue.remove(id);
                 }
 
+                if (!isAlive()) {
+                    // An answer is not coming...
+                    throw new GalilException("Not Connected", 9999);// XXX: TODO: Correct code and message
+                }
+
                 try {
-                    oqueue.wait(100);
+                    oqueue.wait(50);
                 } catch (InterruptedException err) {
+                    close();
                     throw new GalilException("wait_rv InterruptedException: " + err.getMessage(), 9999);// XXX: TODO: Correct code and message
                 }
             }
@@ -97,6 +129,12 @@ public class GalilThread extends Thread {
         ReturnValue rv = wait_rv(id);
         if (rv.ok) { return rv.value; }
         else       { throw rv.error; }
+    }
+
+    public List<String> wait_string(List<Integer> ids) throws GalilException {
+        List<String> strings = new ArrayList<String>();
+        for (Integer id : ids) { strings.add(wait_string(id)); }
+        return strings;
     }
 
     public double wait_double(Integer id) throws GalilException {
@@ -139,6 +177,22 @@ public class GalilThread extends Thread {
         return wait_string( enqueue( cmd ) );
     }
 
+    /** Note: command(List<String> cmds) is intentionally slow, waits for
+     * each commandd to succeed or fail before sending nect command. If you
+     * care more for speed than a known controller state, you can use:
+     *
+     *    List<Integer> ids = galil.enqueue(cmds);
+     *    List<String> vals = galil.wait_string(ids);
+     */
+    public List<String> command(List<String> cmds) throws GalilException {
+        List<String> strings = new ArrayList<String>();
+        for (String cmd : cmds) {
+            strings.add(wait_string(enqueue(new IdentifiedString(next_id(), false, cmd))));
+        }
+        return strings;
+    }
+
+
     public String commandString(String cmd) throws GalilException {
         return galil_hex_to_string( wait_string( enqueue( cmd ) ) );
     }
@@ -161,8 +215,13 @@ public class GalilThread extends Thread {
         wait_string(enqueue(new IdentifiedString(next_id(), true, "connect_unsolicited")));
     }
 
-    public String message() throws GalilException {
-        return wait_string(enqueue(new IdentifiedString(next_id(), true, "message")));
+    public String message() {
+        String ret = null;
+        synchronized (msg_builder) {
+            ret = msg_builder.toString();
+            msg_builder.setLength(0);
+        }
+        return ret;
     }
 
     public Integer programDownload(String program) {
@@ -177,6 +236,22 @@ public class GalilThread extends Thread {
         return wait_listD( enqueue(new IdentifiedString(next_id(), true, "arrayUpload", name)) );
     }
 
+    public static double[] ListToArray(List<Double> list) {
+        double array[] = new double[list.size()];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = list.get(i).doubleValue();
+        }
+        return array;
+    }
+
+    public static List<Double> ArrayToList(double[] array) {
+        ArrayList<Double> list = new ArrayList<Double>(array.length);
+        for (int i = 0; i < array.length; i++) {
+            list.add(array[i]);
+        }
+        return list;
+    }
+
     @Override
     public void run() {
         try {
@@ -189,25 +264,36 @@ public class GalilThread extends Thread {
             }
         }
 
+        IdentifiedString cmd;
+        ReturnValue rv;
+        String msg;
         while (just_keep_swimming) {
+            cmd = null;
+            rv  = null;
             try {
-                IdentifiedString cmd;
-                ReturnValue rv = null;
 
                 synchronized (iqueue) {
-                    while (iqueue.isEmpty()) {
-                        iqueue.wait();
+                    while (just_keep_swimming && iqueue.isEmpty()) {
+                        msg = connection.message();
+                        if (msg != null && !msg.isEmpty()) {
+                            synchronized (msg_builder) {
+                                msg_builder.append(msg);
+                            }
+                        }
+                        iqueue.wait(50);
                     }
 
-                    cmd = iqueue.remove();
+                    try {
+                        cmd = iqueue.remove();
+                    } catch (NoSuchElementException err) {
+                        if (just_keep_swimming) { continue; } else { break; }
+                    }
                 }
 
                 try {
                     if (cmd.meta) {
                         if (cmd.value.equals("connect_unsolicited")) {
                             rv = th_connect_unsolicited(cmd);
-                        } else if (cmd.value.equals("message")) {
-                            rv = th_message(cmd);
                         } else if (cmd.value.equals("programDownload")) {
                             rv = th_programDownload(cmd);
                         } else if (cmd.value.equals("arrayDownload")) {
@@ -219,7 +305,11 @@ public class GalilThread extends Thread {
                         rv = th_process_command(cmd);
                     }
                 } catch (GalilException err) {
-                    rv = new ReturnValue(false, err, (String) null);
+                    rv = new ReturnValue(cmd, false, err, (String) null);
+                    if (err.code >= 5000 && err.code < 6000) {
+                        // Socket IO exception, the socket is probably dead
+                        close();
+                    }
                 }
 
                 if (rv != null) {
@@ -229,25 +319,23 @@ public class GalilThread extends Thread {
                     }
                 }
             }
-            catch ( InterruptedException ie ) {
+            catch (InterruptedException err) {
                 break;
             }
         }
 
-        connection.close();
+        synchronized (connection) {
+            connection.close();
+        }
     }
 
     private ReturnValue th_process_command(IdentifiedString cmd) throws GalilException {
-        return new ReturnValue(true, null, connection.command(cmd.value));
+        return new ReturnValue(cmd, true, null, connection.command(cmd.value));
     }
 
     private ReturnValue th_connect_unsolicited(IdentifiedString cmd) throws GalilException {
         connection.connect_unsolicited();
-        return new ReturnValue(true, null, "");
-    }
-
-    private ReturnValue th_message(IdentifiedString cmd) throws GalilException {
-        return new ReturnValue(true, null, connection.message());
+        return new ReturnValue(cmd, true, null, "");
     }
 
     private ReturnValue th_programDownload(IdentifiedString cmd) throws GalilException {
@@ -261,7 +349,7 @@ public class GalilThread extends Thread {
     }
 
     private ReturnValue th_arrayUpload(IdentifiedString cmd) throws GalilException {
-        return new ReturnValue(true, null, connection.arrayUpload(cmd.str));
+        return new ReturnValue(cmd, true, null, connection.arrayUpload(cmd.str));
     }
 
     public class IdentifiedString {
@@ -291,20 +379,28 @@ public class GalilThread extends Thread {
             this.str = str;
             this.listD = listD;
         }
+
+        public String toString() {
+            if (!meta) { return value; }
+            return "<<" + value + ">>";
+        }
     }
 
     public class ReturnValue {
+        public final IdentifiedString cmd;
         public final boolean ok;
         public final GalilException error;
         public final String value;
         public final List<Double> listD;
-        public ReturnValue(boolean ok, GalilException error, String value) {
+        public ReturnValue(IdentifiedString cmd, boolean ok, GalilException error, String value) {
+            this.cmd = cmd;
             this.ok = ok;
             this.error = error;
             this.value = value;
             this.listD = null;
         }
-        public ReturnValue(boolean ok, GalilException error, List<Double> listD) {
+        public ReturnValue(IdentifiedString cmd, boolean ok, GalilException error, List<Double> listD) {
+            this.cmd = cmd;
             this.ok = ok;
             this.error = error;
             this.value = null;
