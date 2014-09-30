@@ -1,11 +1,7 @@
 <project name="galil-java" default="dist" basedir=".">
-    <property name="src" location="src"/>
+    <property name="src"   location="src"/>
     <property name="build" location="build"/>
     <property name="dist"  location="libs"/>
-
-    <presetdef name="javac">
-        <javac includeantruntime="false" />
-    </presetdef>
 
     <target name="init">
         <tstamp/>
@@ -13,7 +9,7 @@
     </target>
 
     <target name="compile" depends="init" description="compile the source">
-        <javac srcdir="${src}" destdir="${build}"/>
+        <javac srcdir="${src}" destdir="${build}" debug="on" includeantruntime="false" />
     </target>
 
     <target name="dist" depends="compile" description="generate the distribution">

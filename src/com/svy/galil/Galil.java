@@ -35,9 +35,9 @@ public class Galil {
         // IHA TCP PORT 7777 TO IP ADDRESS 10,10,10,1 PORT 50264
         String port = "PORT " + sock.getLocalPort();
         boolean found = false;
-        for (int i = 0; i < handles.length; i++) {
-            if (handles[i].matches("^IH[A-Z] .*? " + port + "$")) {
-                return handles[i].substring(2, 3);
+        for (String str : handles) {
+            if (str.matches("^IH[A-Z] .*? " + port + "$")) {
+                return str.substring(2, 3);
             }
         }
 
@@ -170,11 +170,11 @@ public class Galil {
             throw new GalilException(err.toString(), 9011);// XXX: TODO: Check code
         }
 
-        for (int i=0; i < len; i++) {
-            if ((buff[i] & UNSOLICITED_BIT) != 0) {
-                unsol.write(buff[i] ^ UNSOLICITED_BIT);
+        for (byte b : buff) {
+            if ((b & UNSOLICITED_BIT) != 0) {
+                unsol.write(b ^ UNSOLICITED_BIT);
             } else {
-                sol.write(buff[i]);
+                sol.write(b);
             }
         }
 
