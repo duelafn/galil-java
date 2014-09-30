@@ -10,16 +10,16 @@ public class Test1 {
     public int tests_failed = 0;
 
     public static void main(String[] args) throws GalilException {
-        Galil galil = new Galil("10.10.10.2");
+        String addr = "10.10.10.2";
+        Galil galil = new Galil(addr);
         Test1 test = new Test1();
 
         // Two methods of message retrieval: a separate handle, or "inline"
         // Choose one of the following:
         galil.connect_unsolicited();
-//         galil.command("CFI");
 
         // Basic Connection and command sending
-        test.ok(galil.connection().startsWith("10.10.10.2"), "Connection String");
+        test.ok(galil.connection().startsWith(addr), "Connection String");
         test.ok(galil.commandValue("MGTIME") > 0, "Can get commandValue()");
 
         // Invalid command error
@@ -68,8 +68,8 @@ public class Test1 {
 
         // Multi-command processing; Dangerous at the best of times, but we
         // should do reasonable things in the easy cases, especially when
-        // oiur approach is compatible with the output of the standard
-        // galil library.
+        // our approach is compatible with the output of the standard galil
+        // library.
         test.is(galil.command("MG1+2;MG3+4"), "3.0000\r\n: 7.0000", "Multi-commands (with output)");
         test.is(galil.command("x=2;y=5"), ":", "Multi-commands (without output)");
 
