@@ -1,4 +1,7 @@
 package com.svy.galil;
+/*
+ * Copyright 2014 CMM, Inc.
+ */
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

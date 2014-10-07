@@ -14,7 +14,7 @@ t/%.class: t/%.java libs/galil-java.jar
 	javac -g -classpath "t:libs/galil-java.jar" $<
 
 check:
-	checkstyle -c conf/checkstyle.xml  -r src
+	JAVA_CMD=$(shell which java) checkstyle -c conf/checkstyle.xml  -r src 2>&1 | grep -v '^log4j:WARN'
 
 clean:
 	ant clean

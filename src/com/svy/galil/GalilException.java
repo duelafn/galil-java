@@ -1,4 +1,7 @@
 package com.svy.galil;
+/*
+ * Copyright 2014 CMM, Inc.
+ */
 
 
 public class GalilException extends Exception {

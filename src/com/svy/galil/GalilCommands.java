@@ -1,7 +1,10 @@
 package com.svy.galil;
+/*
+ * Copyright 2014 CMM, Inc.
+ */
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class GalilCommands extends ArrayList<String> {
     public GalilCommands() { super(); }
