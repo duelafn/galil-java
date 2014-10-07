@@ -9,6 +9,7 @@ import java.util.NoSuchElementException;
 
 public class GalilThread extends Thread {
     public  boolean die_on_connection_error = false;
+    public  int message_cache_size = 4096;
 
     private StringBuilder msg_builder = new StringBuilder(1024);
 
@@ -277,6 +278,10 @@ public class GalilThread extends Thread {
                         msg = connection.message();
                         if (msg != null && !msg.isEmpty()) {
                             synchronized (msg_builder) {
+                                int trim = msg_builder.length() + msg.length() - message_cache_size;
+                                if (trim > 128) {
+                                    msg_builder.delete(0, trim);
+                                }
                                 msg_builder.append(msg);
                             }
                         }
