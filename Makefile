@@ -18,4 +18,4 @@ check:
 
 clean:
 	ant clean
-	rm t/*.class
+	rm -f t/*.class
