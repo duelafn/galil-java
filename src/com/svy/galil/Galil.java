@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
+import java.util.HashSet;
 
 public class Galil {
     private static final String VERSION = "1.0.1 Sep 2014 Galil.java";
@@ -47,7 +47,16 @@ public class Galil {
         return null;
     }
 
+    /* find_handle() was implemented first and is, to me, the more reliable
+       measure, however, the Android emulator injects a "man in the
+       middle", so ports are not always determinable. Therefore, we take an
+       alternative approach to determining the unsolicited connection as a
+       fallback.
+     */
     public void connect_unsolicited() throws GalilException {
+        // Must be done, just in case find_handle() fails.
+        String[] handles = command("TH").split("[\r\n]+");
+
         try {
             unsolicited = new Socket(address, 7777);
             unsolicited.setSoTimeout(timeout_ms);
@@ -63,7 +72,30 @@ public class Galil {
 
         String handle = find_handle(unsolicited);
         if (null == handle) {
-            throw new GalilException("Unable to find handle for connected socket");
+            // Bummer, find_handle() failed. Perhaps the new connection is obvious?
+            String[] handles2 = command("TH").split("[\r\n]+");
+            HashSet<String> h = new HashSet<String>();
+            for (String str : handles2) {
+                if (str.matches("^IH[A-Z] .*")) {
+                    h.add(str.substring(2, 3));
+                }
+            }
+
+            for (String str : handles) {
+                if (str.matches("^IH[A-Z] .*")) {
+                    h.remove(str.substring(2, 3));
+                }
+            }
+
+            if (1 == h.size()) {
+                // Only one new - let's just assume it is what we want.
+                handle = h.iterator().next();
+            }
+
+            else{
+                // Bummer - no clue what to do now
+                throw new GalilException("Unable to find handle for connected socket");
+            }
         }
         command("CF" + handle);
     }
