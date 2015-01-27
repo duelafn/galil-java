@@ -348,12 +348,12 @@ public class GalilThread extends Thread {
 
     private ReturnValue th_programDownload(IdentifiedString cmd) throws GalilException {
         connection.programDownload(cmd.str);
-        return null;
+        return new ReturnValue(cmd, true, null, "");
     }
 
     private ReturnValue th_arrayDownload(IdentifiedString cmd) throws GalilException {
         connection.arrayDownload(cmd.listD, cmd.str);
-        return null;
+        return new ReturnValue(cmd, true, null, "");
     }
 
     private ReturnValue th_arrayUpload(IdentifiedString cmd) throws GalilException {
