@@ -2,12 +2,8 @@
 galil-java
 ==========
 
-Java library for communicating with [Galil Motion Controllers][Galil]. Is
-intended to be a similar API to the [GalilTools Communication
-Library][API].
-
-[Galil] http://www.galil.com/
-[API]   http://www.galil.com/downloads/api
+Java library for communicating with [Galil Motion Controllers](http://www.galil.com/).
+Is intended to be a similar API to the [GalilTools Communication Library](http://www.galil.com/downloads/api).
 
 
 
@@ -50,11 +46,9 @@ Contributing
 ============
 
 Contributions are welcome and appreciated. Development occurs on
-[GitHub][Github] where we would prefer that bug reports and pull requests
-be posted.
+[GitHub](https://github.com/duelafn/galil-java) where we would prefer that
+bug reports and pull requests be posted.
 
 By contributing to this package, you agree to release your contribution
 under the terms of the license. All code is released under the GNU Lesser
 GPL v3.
-
-[Github] https://github.com/duelafn/galil-java
