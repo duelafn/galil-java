@@ -28,6 +28,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
+import com.svy.galil.GalilException;
+
 public class Galil {
     private static final String VERSION = "1.0.1 Sep 2014 Galil.java";
     private static final byte   UNSOLICITED_BIT = (byte) 0x80;

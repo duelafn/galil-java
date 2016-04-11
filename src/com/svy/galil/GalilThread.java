@@ -21,6 +21,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import com.svy.galil.Galil;
+import com.svy.galil.GalilException;
 
 public class GalilThread extends Thread {
     public  boolean die_on_connection_error = false;
