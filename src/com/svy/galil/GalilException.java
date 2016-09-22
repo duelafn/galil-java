@@ -33,11 +33,17 @@ public class GalilException extends Exception {
     ,   "OFFLINE"
     };
 
+    private static String get_error_category(int error_code) {
+        int cat = (int) (error_code/1000);
+        if (cat < 0 || cat >= ERROR_CATEGORY.length) { cat = 0; }
+        return ERROR_CATEGORY[cat];
+    }
+
     public GalilException(String message) {
         super("0000 " + ERROR_CATEGORY[0] + " ERROR.  " + message);
     }
     public GalilException(String message, int error_code) {
-        super(Integer.toString(error_code) + " " + ERROR_CATEGORY[(int) (error_code/1000)] + " ERROR.  " + message);
+        super(Integer.toString(error_code) + " " + get_error_category(error_code) + " ERROR.  " + message);
         code = error_code;
     }
     public GalilException(String message, int error_code, String res) {
