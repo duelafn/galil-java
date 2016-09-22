@@ -361,7 +361,13 @@ public class GalilThread extends Thread {
     }
 
     private ReturnValue th_programDownload(IdentifiedString cmd) throws GalilException {
-        connection.programDownload(cmd.str);
+        int timeout_ms = connection.getTimeout();
+        connection.setTimeout(5000);
+        try {
+            connection.programDownload(cmd.str);
+        } finally {
+            connection.setTimeout(timeout_ms);
+        }
         return new ReturnValue(cmd, true, null, "");
     }
 
