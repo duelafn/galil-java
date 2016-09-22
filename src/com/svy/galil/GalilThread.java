@@ -374,7 +374,7 @@ public class GalilThread extends Thread {
         return new ReturnValue(cmd, true, null, connection.arrayUpload(cmd.str));
     }
 
-    public class IdentifiedString {
+    public static class IdentifiedString {
         public final Integer id;
         public final boolean meta;
         public final String value;
@@ -408,7 +408,7 @@ public class GalilThread extends Thread {
         }
     }
 
-    public class ReturnValue {
+    public static class ReturnValue {
         public final IdentifiedString cmd;
         public final boolean ok;
         public final GalilException error;
