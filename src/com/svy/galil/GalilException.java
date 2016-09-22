@@ -17,7 +17,7 @@ package com.svy.galil;
 
 
 public class GalilException extends Exception {
-    public String result;
+    public String result = null;
     public int code = 0;
 
     private static final String[] ERROR_CATEGORY = {
