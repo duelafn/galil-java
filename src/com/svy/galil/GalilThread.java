@@ -27,6 +27,7 @@ import com.svy.galil.GalilException;
 public class GalilThread extends Thread {
     public  boolean die_on_connection_error = false;
     public  int message_cache_size = 4096;
+    public  HashMap<String, String> stash = new HashMap<String, String>();
 
     private StringBuilder msg_builder = new StringBuilder(1024);
 
@@ -37,7 +38,7 @@ public class GalilThread extends Thread {
     private final HashMap<Integer, ReturnValue> oqueue = new HashMap<Integer, ReturnValue>();
     private Integer ident = 0;
 
-    public GalilThread(String addr) throws GalilException {
+    public GalilThread(String addr) {
         address = addr;
     }
 
@@ -50,6 +51,29 @@ public class GalilThread extends Thread {
 
     public void close() {
         just_keep_swimming = false;
+    }
+
+    public String stash_get(String key, String dflt) {
+        String rv = stash.get(key);
+        return( (null == rv) ? dflt : rv );
+    }
+    public double stash_get(String key, double dflt) {
+        String rv = stash.get(key);
+        return( (null == rv) ? dflt : Double.parseDouble(rv) );
+    }
+    public long stash_get(String key, long dflt) {
+        String rv = stash.get(key);
+        return( (null == rv) ? dflt : Long.parseLong(rv, 10) );
+    }
+
+    public void stash_put(String key, String val) {
+        stash.put(key, val);
+    }
+    public void stash_put(String key, double val) {
+        stash.put(key, Double.toString(val));
+    }
+    public void stash_put(String key, long val) {
+        stash.put(key, Long.toString(val));
     }
 
     private Integer next_id() {
