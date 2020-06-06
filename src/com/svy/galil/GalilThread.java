@@ -43,7 +43,7 @@ public class GalilThread extends Thread {
     }
 
     public String connection() {
-        synchronized (connection) {
+        synchronized (this) {
             return (connection == null) ? null : connection.connection();
         }
     }
@@ -294,7 +294,9 @@ public class GalilThread extends Thread {
     @Override
     public void run() {
         try {
-            connection = new Galil(address);
+            synchronized (this) {
+                connection = new Galil(address);
+            }
         } catch (GalilException err) {
             if (die_on_connection_error) {
                 throw new RuntimeException("Unable to connect to controller", err);
@@ -367,7 +369,7 @@ public class GalilThread extends Thread {
             }
         }
 
-        synchronized (connection) {
+        synchronized (this) {
             connection.close();
         }
     }
