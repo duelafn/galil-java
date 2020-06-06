@@ -84,12 +84,9 @@ public class GalilThread extends Thread {
         // make sure we clean the id from the output queue so we do not
         // accidentally return old data.
         Integer id;
-        synchronized (ident) {
+        synchronized (oqueue) {
             ident = (ident + 1) % 9999;
             id = ident;
-        }
-
-        synchronized (oqueue) {
             oqueue.remove(id);
         }
 
